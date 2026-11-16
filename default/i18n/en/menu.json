@@ -780,6 +780,12 @@
   "install.terminal": {
     "label": "Terminal"
   },
+  "install.hasky": {
+    "label": "Hasky Labs"
+  },
+  "install.hasky.note": {
+    "label": "Hasky Note"
+  },
   "install.tui": {
     "label": "TUI"
   },

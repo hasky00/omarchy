@@ -6,6 +6,9 @@ o.bind("SUPER + ALT + SHIFT + F", "File manager (cwd)", { omarchy = "files-cwd" 
 o.bind("SUPER + SHIFT + B", "Browser", { omarchy = "browser" })
 o.bind("SUPER + SHIFT + ALT + B", "Browser (private)", { omarchy = "browser --private" })
 o.bind("SUPER + SHIFT + N", "Editor", { omarchy = "editor" })
+if o.cmd_present("hasky-note") then
+  o.bind("SUPER + SHIFT + ALT + N", "Hasky Note", { tui = "hasky-note", focus = true })
+end
 
 if o.preinstalled_bindings_enabled() then
   -- Bindings for preinstalled Omarchy applications, TUIs, and web apps.

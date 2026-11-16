@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# omarchy:summary=Build and install Hasky Note, the terminal notes app
+
+set -euo pipefail
+
+if (( EUID == 0 )); then
+  echo "Run this command as your desktop user, without sudo." >&2
+  exit 1
+fi
+
+source_dir="$OMARCHY_PATH/hasky-note"
+bin_dir="$HOME/.local/bin"
+icon_dir="$HOME/.local/share/icons/hicolor/scalable/apps"
+desktop_file="$HOME/.local/share/applications/Hasky Note.desktop"
+
+# Rust is only needed to build, so it is not part of the default package set.
+if omarchy-cmd-missing cargo; then
+  echo "Installing Rust..."
+  omarchy-pkg-add rust
+fi
+
+# Build outside the Omarchy tree: it can be a read-only package path, and a
+# target directory inside a dev checkout would sit in the way of updates.
+echo "Building Hasky Note..."
+CARGO_TARGET_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hasky-note" \
+  cargo build --release --locked --manifest-path "$source_dir/Cargo.toml"
+
+install -Dm755 "${XDG_CACHE_HOME:-$HOME/.cache}/hasky-note/release/hasky-note" "$bin_dir/hasky-note"
+install -Dm644 "$source_dir/icon.svg" "$icon_dir/hasky-note.svg"
+gtk-update-icon-cache "$HOME/.local/share/icons/hicolor" &>/dev/null || true
+
+mkdir -p "$HOME/notes" "$(dirname "$desktop_file")"
+
+# Same launch path as the hotkey, so the launcher focuses an open window
+# instead of starting a second one.
+cat >"$desktop_file" <<EOF
+[Desktop Entry]
+Version=1.0
+Name=Hasky Note
+Comment=Fast terminal notes
+Exec=omarchy-launch-or-focus-tui hasky-note
+Terminal=false
+Type=Application
+Icon=hasky-note
+StartupNotify=true
+EOF
+
+# The hotkey is only bound when the command exists, so Hyprland has to read
+# its config again to pick it up.
+hyprctl reload >/dev/null 2>&1 || true
+
+echo ""
+echo "Hasky Note has been installed. Open it with Super + Shift + Alt + N."

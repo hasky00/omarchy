@@ -4,11 +4,15 @@ Fast terminal notes for Omarchy. Plain markdown files in `~/notes`, themed by yo
 
 ## Install
 
+On Hasky Omarchy, pick **Install > Hasky Labs > Hasky Note** in the Omarchy menu, or run:
+
 ```bash
-./install.sh
+omarchy install hasky-note
 ```
 
-Then press **Super + Alt + N**.
+Then press **Super + Shift + Alt + N**, or find Hasky Note in the app launcher.
+
+On macOS, run `./install.sh` for the command alone.
 
 ## Use
 
