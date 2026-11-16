@@ -12,7 +12,7 @@ fi
 source_dir="$OMARCHY_PATH/hasky-note"
 bin_dir="$HOME/.local/bin"
 icon_dir="$HOME/.local/share/icons/hicolor/scalable/apps"
-desktop_file="$HOME/.local/share/applications/Hasky Note.desktop"
+desktop_file="$HOME/.local/share/applications/hasky-note.desktop"
 
 # Rust is only needed to build, so it is not part of the default package set.
 if omarchy-cmd-missing cargo; then
