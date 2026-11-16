@@ -786,6 +786,9 @@
   "install.hasky.note": {
     "label": "Hasky Note"
   },
+  "install.hasky.lightning-balance": {
+    "label": "Lightning Balance"
+  },
   "install.tui": {
     "label": "TUI"
   },

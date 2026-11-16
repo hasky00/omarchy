@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# omarchy:summary=Install the Lightning balance bar widget
+
+set -euo pipefail
+
+if (( EUID == 0 )); then
+  echo "Run this command as your desktop user, without sudo." >&2
+  exit 1
+fi
+
+plugin_id="omarchy.lightning-balance"
+config="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/lightning/config"
+
+# The widget's own installer copies the plugin and its helpers into the user's
+# config, and seeds a config file only when there is none, so a wallet
+# connection that is already set up is never overwritten.
+bash "$OMARCHY_PATH/lightning-balance/install.sh"
+
+# Put the widget on the bar. `bar put` leaves a widget that is already placed
+# where it is, so running this again does not move it.
+placed=0
+if omarchy-shell shell rescanPlugins >/dev/null 2>&1 &&
+  omarchy-plugin-enable "$plugin_id" >/dev/null 2>&1 &&
+  omarchy-bar put "$plugin_id" --section right >/dev/null 2>&1; then
+  placed=1
+fi
+
+echo ""
+echo "The Lightning balance widget has been installed."
+if (( placed == 0 )); then
+  echo "Add it to your bar from the bar widget list."
+fi
+if grep -qs "PASTE_YOUR_READ_ONLY_CONNECTION_HERE" "$config"; then
+  echo "Paste a read-only wallet connection into $config to show your balance."
+fi

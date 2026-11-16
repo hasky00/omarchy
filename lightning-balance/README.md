@@ -9,10 +9,10 @@ machine beyond a get-balance connection string you control and can revoke.
 
 ## Install
 
+On Hasky Omarchy, pick **Install > Hasky Labs > Lightning Balance** in the Omarchy menu, or run:
+
 ```bash
-git clone https://github.com/hasky00/omarchy-lightning-balance.git
-cd omarchy-lightning-balance
-./install.sh
+omarchy install hasky-lightning-balance
 ```
 
 Then edit `~/.config/omarchy/lightning/config` and paste your connection:
