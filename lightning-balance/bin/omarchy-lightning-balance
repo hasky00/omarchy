@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# omarchy:summary=Print the user's Lightning wallet balance in sats
+# omarchy:hidden=true
+
+# Reads a read-only wallet connection from a config file and prints the balance
+# as a whole number of sats on stdout. Prints nothing and exits non-zero on any
+# error, so the bar widget can simply hide itself. No secret is ever printed or
+# passed on the command line.
+
+set -uo pipefail
+
+config="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/lightning/config"
+[[ -r $config ]] || exit 1
+
+# shellcheck source=/dev/null
+PROVIDER="" NWC_URL="" ALBY_TOKEN=""
+source "$config" 2>/dev/null || exit 1
+
+case "${PROVIDER:-}" in
+nwc)
+  [[ -n $NWC_URL ]] || exit 1
+  helper="${OMARCHY_PATH:-/usr/share/omarchy}/bin/nwc-balance.mjs"
+  [[ -r $helper ]] || helper="$(dirname "$(readlink -f "$0")")/nwc-balance.mjs"
+  [[ -r $helper ]] || exit 1
+  # Secret travels only in the environment, never argv.
+  NWC_URL="$NWC_URL" timeout 15 node "$helper" 2>/dev/null || exit 1
+  ;;
+alby)
+  [[ -n $ALBY_TOKEN ]] || exit 1
+  sats=$(curl -fsS --max-time 10 \
+    -H "Authorization: Bearer $ALBY_TOKEN" \
+    https://api.getalby.com/balance 2>/dev/null \
+    | jq -er 'if .currency == "BTC" then .balance else empty end') || exit 1
+  printf '%s\n' "$sats"
+  ;;
+*)
+  exit 1
+  ;;
+esac

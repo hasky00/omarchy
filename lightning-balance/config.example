@@ -1,0 +1,10 @@
+# Copy this to ~/.config/omarchy/lightning/config and chmod 600.
+# Pick ONE provider.
+
+# --- Nostr Wallet Connect (recommended, self-custody, read-only) ---
+PROVIDER=nwc
+NWC_URL=nostr+walletconnect://PASTE_YOUR_READ_ONLY_CONNECTION_HERE
+
+# --- Alby read-only token (fallback) ---
+# PROVIDER=alby
+# ALBY_TOKEN=PASTE_READ_ONLY_TOKEN_HERE

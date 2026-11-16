@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "omarchy.lightning-balance",
+  "name": "LightningBalance",
+  "version": "0.1.0",
+  "author": "Hasky Labs",
+  "description": "Lightning wallet balance in sats",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "LightningBalance.qml"
+  },
+  "barWidget": {
+    "displayName": "Lightning balance",
+    "description": "Shows your Lightning wallet balance in sats, read-only",
+    "category": "Status",
+    "allowMultiple": false
+  }
+}
