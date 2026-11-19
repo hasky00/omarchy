@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Hasky Shelf
+Comment=Write books and keep them on a shelf
+Comment[da]=Skriv bøger og hav dem stående på en hylde
+Exec=haskyshelf
+Icon=haskyshelf
+Terminal=false
+Categories=Office;
+StartupWMClass=haskyshelf
