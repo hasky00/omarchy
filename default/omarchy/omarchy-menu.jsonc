@@ -335,6 +335,7 @@
   "install.terminal.kitty": {"icon":"","label":"Kitty","disabled":"omarchy-pkg-present kitty","action":"omarchy-launch-floating-terminal-with-presentation 'omarchy-install-terminal kitty'"},
   "install.hasky.note": {"icon":"󰎚","label":"Hasky Note","disabled":"[[ -x \"$HOME/.local/bin/hasky-note\" ]]","action":"omarchy-launch-floating-terminal-with-presentation omarchy-install-hasky-note"},
   "install.hasky.lightning-balance": {"icon":"󱐋","label":"Lightning","disabled":"[[ -f \"$HOME/.config/omarchy/plugins/lightning-balance/manifest.json\" ]]","action":"omarchy-launch-floating-terminal-with-presentation omarchy-install-hasky-lightning-balance"},
+  "install.hasky.shelf": {"icon":"󰂺","label":"Hasky Shelf","disabled":"[[ -x \"$HOME/.local/bin/haskyshelf\" ]]","action":"omarchy-launch-floating-terminal-with-presentation omarchy-install-hasky-shelf"},
   "install.ai.amp": {"icon":"","iconFont":"omarchy","label":"Amp Desktop","disabled":"omarchy-pkg-present amp-desktop-bin","action":"omarchy-install-and-launch 'Amp Desktop' amp-desktop-bin amp-desktop"},
   "install.ai.chatgpt": {"icon":"","iconFont":"omarchy","label":"ChatGPT Desktop","disabled":"omarchy-pkg-present openai-codex-desktop","action":"omarchy-launch-floating-terminal-with-presentation omarchy-install-ai-chatgpt"},
   "install.ai.claude": {"icon":"","iconFont":"omarchy","label":"Claude Desktop","disabled":"omarchy-pkg-present claude-desktop","action":"omarchy-launch-floating-terminal-with-presentation omarchy-install-ai-claude"},

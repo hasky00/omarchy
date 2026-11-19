@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# omarchy:summary=Build and install Hasky Shelf, the book cabinet app
+
+set -euo pipefail
+
+if (( EUID == 0 )); then
+  echo "Run this command as your desktop user, without sudo." >&2
+  exit 1
+fi
+
+source_dir="$OMARCHY_PATH/hasky-shelf"
+build_dir="${XDG_CACHE_HOME:-$HOME/.cache}/hasky-shelf"
+
+# Omarchy ships everything a Qt app needs; these only install on a machine
+# that has had its build tools removed.
+if omarchy-cmd-missing cmake; then
+  echo "Installing the build tools..."
+  omarchy-pkg-add base-devel cmake qt6-base qt6-declarative qt6-svg qt6-wayland
+fi
+
+# Build outside the Omarchy tree: it can be a read-only package path, and a
+# build directory inside a dev checkout would sit in the way of updates.
+echo "Building Hasky Shelf..."
+cmake -S "$source_dir" -B "$build_dir" -DCMAKE_BUILD_TYPE=Release >/dev/null
+cmake --build "$build_dir" --target haskyshelf -j"$(nproc)"
+
+# Installs the binary, the launcher entry and the icon for this user.
+cmake --install "$build_dir" --prefix "$HOME/.local" >/dev/null
+gtk-update-icon-cache "$HOME/.local/share/icons/hicolor" &>/dev/null || true
+
+echo ""
+echo "Hasky Shelf has been installed. Find it in the app launcher."

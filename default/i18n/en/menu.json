@@ -796,6 +796,9 @@
   "install.hasky.lightning-balance": {
     "label": "Lightning"
   },
+  "install.hasky.shelf": {
+    "label": "Hasky Shelf"
+  },
   "install.tui": {
     "label": "TUI"
   },
