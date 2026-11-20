@@ -77,6 +77,7 @@ ApplicationWindow {
             return
         page.text = text
         page.savedText = page.text
+        page.written = false
         page.cursorPosition = page.length
         win.countWords()
         openTitle = book.title
@@ -99,8 +100,23 @@ ApplicationWindow {
     function closeBook() {
         if (!saveBook())
             return
+        // Escape saves and leaves in one step, so the page's own "Saved"
+        // is gone before it can be read; the shelf says it instead.
+        if (page.written) {
+            notice = qsTr("Saved")
+            noticeTimer.restart()
+        }
         openId = ""
         grid.forceActiveFocus()
+    }
+
+    // A short word on the shelf about what just happened, cleared again
+    // a moment later.
+    property string notice: ""
+    Timer {
+        id: noticeTimer
+        interval: 3000
+        onTriggered: win.notice = ""
     }
 
     property int words: 0
@@ -163,6 +179,13 @@ ApplicationWindow {
                 font.letterSpacing: 1.5
                 font.capitalization: Font.AllUppercase
                 color: theme.accent
+            }
+
+            Label {
+                objectName: "notice"
+                visible: win.notice !== "" && !backend.busy
+                text: win.notice
+                opacity: 0.7
             }
 
             Label {
@@ -418,7 +441,7 @@ ApplicationWindow {
                             font.pixelSize: 15
                             font.bold: true
                             wrapMode: Text.Wrap
-                            maximumLineCount: 5
+                            maximumLineCount: 4
                             elide: Text.ElideRight
                         }
 
@@ -451,6 +474,9 @@ ApplicationWindow {
                             font.pixelSize: 10
                             font.letterSpacing: 0.4
                             font.capitalization: Font.AllUppercase
+                            // A long name takes a second line before it is cut.
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
                             elide: Text.ElideRight
                         }
                     }
@@ -614,9 +640,16 @@ ApplicationWindow {
                 // the two, so undoing back to the saved text is clean again.
                 property string savedText: ""
                 readonly property bool unsaved: text !== savedText
+                // Whether anything was written since the book was opened.
+                property bool written: false
 
                 onCursorRectangleChanged: pageArea.follow(cursorRectangle)
-                onTextChanged: if (win.editing && unsaved) autosave.restart()
+                onTextChanged: {
+                    if (win.editing && unsaved) {
+                        written = true
+                        autosave.restart()
+                    }
+                }
             }
 
             Label {

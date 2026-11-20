@@ -595,6 +595,19 @@ private slots:
         QTRY_VERIFY(!editor->property("visible").toBool());
         QCOMPARE(backend.readText(bookId), QString("nq\n?"));
         QVERIFY(shelf->hasActiveFocus());
+        // Leaving happens in the same keypress as the save, so the shelf is
+        // where the writer is told the book was saved.
+        auto *notice = item(window->contentItem(), "notice");
+        QVERIFY(notice);
+        QVERIFY(notice->property("visible").toBool());
+        QCOMPARE(notice->property("text").toString(), QString("Saved"));
+        // Opening and leaving without writing has nothing to announce.
+        window->setProperty("notice", QString());
+        QTest::keyClick(window, Qt::Key_Return);
+        QTRY_VERIFY(editor->property("visible").toBool());
+        QTest::keyClick(window, Qt::Key_Escape);
+        QTRY_VERIFY(!editor->property("visible").toBool());
+        QVERIFY(!notice->property("visible").toBool());
 
         // A asks the desktop for files; the picked one lands on the shelf
         // and is the book picked there.
