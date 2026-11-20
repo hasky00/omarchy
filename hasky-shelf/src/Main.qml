@@ -103,11 +103,22 @@ ApplicationWindow {
         // Escape saves and leaves in one step, so the page's own "Saved"
         // is gone before it can be read; the shelf says it instead.
         if (page.written) {
-            notice = qsTr("Saved")
-            noticeTimer.restart()
+            say(qsTr("Saved"), 3000)
         }
         openId = ""
         grid.forceActiveFocus()
+    }
+
+    function shareBook(index) {
+        const book = backend.books[index]
+        if (book)
+            backend.shareBook(book.id)
+    }
+
+    function say(words, time) {
+        notice = words
+        noticeTimer.interval = time
+        noticeTimer.restart()
     }
 
     // A short word on the shelf about what just happened, cleared again
@@ -134,6 +145,7 @@ ApplicationWindow {
     Shortcut { sequence: "Q"; enabled: win.shelfHasKeys; onActivated: Qt.quit() }
     Shortcut { sequence: "N"; enabled: win.shelfHasKeys; onActivated: newBook.open() }
     Shortcut { sequence: "A"; enabled: win.shelfHasKeys; onActivated: backend.chooseFiles() }
+    Shortcut { sequence: "S"; enabled: win.shelfHasKeys; onActivated: win.shareBook(grid.currentIndex) }
     // One Shortcut per key, so `omarchy agent look app --keys` can press each.
     Shortcut { sequence: "Return"; enabled: win.shelfHasKeys; onActivated: win.openBook(grid.currentIndex) }
     Shortcut { sequence: "Enter"; enabled: win.shelfHasKeys; onActivated: win.openBook(grid.currentIndex) }
@@ -152,6 +164,10 @@ ApplicationWindow {
                 if (backend.books[i].id === id)
                     grid.currentIndex = i
             }
+        }
+        // A path takes longer to read than a word.
+        function onShared(path, shown) {
+            win.say(qsTr("Copy saved as %1").arg(shown), 8000)
         }
     }
 
@@ -186,6 +202,8 @@ ApplicationWindow {
                 visible: win.notice !== "" && !backend.busy
                 text: win.notice
                 opacity: 0.7
+                elide: Text.ElideMiddle
+                Layout.fillWidth: true
             }
 
             Label {
@@ -202,6 +220,7 @@ ApplicationWindow {
                     { keys: "↵", action: qsTr("Open") },
                     { keys: "N", action: qsTr("New book") },
                     { keys: "A", action: qsTr("Add files") },
+                    { keys: "S", action: qsTr("Share") },
                     { keys: "?", action: qsTr("Shortcuts") }
                 ]
                 delegate: RowLayout {
@@ -788,6 +807,7 @@ ApplicationWindow {
                     { keys: "↵", action: qsTr("Open the book") },
                     { keys: "N", action: qsTr("Write a new book") },
                     { keys: "A", action: qsTr("Add PDF or EPUB files") },
+                    { keys: "S", action: qsTr("Share the book as a file") },
                     { keys: "← → ↑ ↓", action: qsTr("Move along the shelf") },
                     { keys: "?", action: qsTr("Show or hide the shortcuts") },
                     { keys: "Q", action: qsTr("Quit") }

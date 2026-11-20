@@ -52,6 +52,14 @@ public:
     // Opens such a book in the desktop's own reader for its format.
     Q_INVOKABLE bool openInReader(const QString &id);
 
+    // Puts a copy of the book in the share folder as one file to hand to
+    // someone: an EPUB of a book written here, the file itself of one that
+    // was added. shared() follows with where it went. The book on the shelf
+    // must be saved first; the copy is made from what is on disk.
+    Q_INVOKABLE void shareBook(const QString &id);
+    // Where shared copies go: the user's Documents unless a test says otherwise.
+    void setShareFolder(const QString &folder) { m_shareFolder = folder; }
+
     // A document's text as it should be written to disk: only the paragraph
     // separators become newlines, so a non-breaking space the writer typed
     // is still one when the book is opened again.
@@ -62,6 +70,8 @@ signals:
     void errorChanged();
     void busyChanged();
     void added(const QString &id);
+    // path is the new file; shown is the same with the home folder as ~.
+    void shared(const QString &path, const QString &shown);
 
 private:
     void load();
@@ -73,6 +83,7 @@ private:
     void setError(const QString &error);
 
     QString m_root;
+    QString m_shareFolder;
     QVariantList m_books;
     QString m_error;
     FilePicker *m_picker;

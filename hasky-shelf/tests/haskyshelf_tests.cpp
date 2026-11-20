@@ -16,6 +16,7 @@
 #include <QtTest>
 
 #include "backend.h"
+#include "epub.h"
 #include "filepicker.h"
 #include "theme.h"
 #include "translator.h"
@@ -320,6 +321,67 @@ private slots:
         QVERIFY(!alone.error().isEmpty());
     }
 
+    void aSharedBookKeepsItsLinesAndItsMarks() {
+        const QString page = Epub::page("Salt & Tide", "A <Writer>", "one\ntwo\n\n\nthree < four\r\n");
+        QVERIFY(page.contains("<h1>Salt &amp; Tide</h1>"));
+        QVERIFY(page.contains("A &lt;Writer&gt;"));
+        // Verse keeps its line breaks; a blank line starts a new paragraph.
+        QVERIFY(page.contains(QRegularExpression("<p>one<br/>\\s+two</p>")));
+        QVERIFY(page.contains("<p>three &lt; four</p>"));
+        QCOMPARE(page.count("<p>"), 2);
+    }
+
+    void aWrittenBookIsSharedAsAnEpub() {
+        QTemporaryDir dir;
+        Backend backend(dir.path() + "/shelf");
+        backend.setShareFolder(dir.path() + "/out");
+        const QString id = backend.createBook("Salt / Tide", "Mara");
+        QVERIFY(backend.saveText(id, "first line\nsecond line"));
+        QSignalSpy shared(&backend, &Backend::shared);
+
+        backend.shareBook(id);
+        QTRY_COMPARE(shared.count(), 1);
+        // The title's slash never becomes a folder.
+        const QString path = dir.path() + "/out/Salt Tide.epub";
+        QCOMPARE(shared.at(0).at(0).toString(), path);
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const QByteArray bytes = file.readAll();
+        // What makes a reader take it for an EPUB: a ZIP whose first file
+        // is the stored mimetype.
+        QVERIFY(bytes.startsWith("PK\x03\x04"));
+        QCOMPARE(bytes.mid(30, 28), QByteArray("mimetypeapplication/epub+zip"));
+        QVERIFY(bytes.contains("first line<br/>"));
+        QVERIFY(bytes.contains("<dc:creator>Mara</dc:creator>"));
+
+        // Sharing again never writes over the copy made before.
+        backend.shareBook(id);
+        QTRY_COMPARE(shared.count(), 2);
+        QCOMPARE(shared.at(1).at(0).toString(), dir.path() + "/out/Salt Tide 2.epub");
+
+        // A book that isn't on the shelf shares nothing.
+        backend.shareBook("../../etc");
+        QVERIFY(!backend.error().isEmpty());
+        QCOMPARE(QDir(dir.path() + "/out").entryList(QDir::Files).size(), 2);
+    }
+
+    void anAddedBookIsSharedAsTheFileItIs() {
+        QTemporaryDir dir;
+        QVERIFY(write(dir.path() + "/glass.pdf", "%PDF-1.7 not really"));
+        Backend backend(dir.path() + "/shelf");
+        backend.setShareFolder(dir.path() + "/out");
+        QSignalSpy added(&backend, &Backend::added);
+        backend.addFiles({QUrl::fromLocalFile(dir.path() + "/glass.pdf")});
+        QTRY_COMPARE(added.count(), 1);
+        QSignalSpy shared(&backend, &Backend::shared);
+
+        backend.shareBook(added.at(0).at(0).toString());
+        QTRY_COMPARE(shared.count(), 1);
+        QFile copy(dir.path() + "/out/glass.pdf");
+        QVERIFY(copy.open(QIODevice::ReadOnly));
+        QCOMPARE(copy.readAll(), QByteArray("%PDF-1.7 not really"));
+    }
+
     void themeFallsBack() {
         QTemporaryDir dir;
         Theme theme(dir.path());
@@ -516,6 +578,7 @@ private slots:
         QVERIFY(write(dir.path() + "/Glass_Rivers.pdf", "%PDF"));
         FakePicker picker;
         Backend backend(dir.path() + "/shelf", &picker);
+        backend.setShareFolder(dir.path() + "/shared");
 
         QQmlApplicationEngine engine;
         QStringList warnings;
@@ -617,6 +680,12 @@ private slots:
         QTRY_COMPARE(shelf->property("count").toInt(), 2);
         QTRY_COMPARE(shelf->property("currentIndex").toInt(), 1);
         QCOMPARE(count->property("text").toString(), QString("2 books"));
+
+        // S hands the picked book over as a file and says where it went.
+        QTest::keyClick(window, Qt::Key_S);
+        QTRY_VERIFY(notice->property("visible").toBool());
+        QVERIFY(notice->property("text").toString().endsWith("/shared/Glass Rivers.pdf"));
+        QVERIFY(QFile::exists(dir.path() + "/shared/Glass Rivers.pdf"));
 
         auto *help = window->findChild<QObject *>("help");
         QTest::keyClick(window, '?');

@@ -1,5 +1,6 @@
 #include "backend.h"
 
+#include "epub.h"
 #include "filepicker.h"
 
 #include <QDateTime>
@@ -51,11 +52,30 @@ QString titleFrom(const QString &fileName) {
     return title.simplified();
 }
 
+// A title as a file name: nothing that parts folders, hides the file or
+// overruns what a file system takes.
+QString fileNameFrom(const QString &title) {
+    QString name;
+    for (const QChar c : title) {
+        if (c == '/' || c == '\\' || c == QChar(0) || c.category() == QChar::Other_Control)
+            name += ' ';
+        else
+            name += c;
+    }
+    name = name.simplified();
+    while (name.startsWith('.'))
+        name.remove(0, 1);
+    while (name.toUtf8().size() > 120)
+        name.chop(1);
+    return name.trimmed();
+}
+
 } // namespace
 
 Backend::Backend(const QString &root, FilePicker *picker, QObject *parent)
     : QObject(parent),
       m_root(root.isEmpty() ? QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) : root),
+      m_shareFolder(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)),
       m_picker(picker) {
     if (m_picker) {
         connect(m_picker, &FilePicker::booksSelected, this, &Backend::addFiles);
@@ -153,6 +173,78 @@ bool Backend::openInReader(const QString &id) {
     }
     setError({});
     return true;
+}
+
+void Backend::shareBook(const QString &id) {
+    const QVariantMap found = book(id);
+    const bool written = found.value("kind").toString() == "written";
+    const QString source = written ? textPath(id) : filePath(id);
+    if (source.isEmpty() || !QFile::exists(source)) {
+        setError(tr("The book could not be shared."));
+        return;
+    }
+    setError({});
+
+    const QString title = found.value("title").toString();
+    const QString author = found.value("author").toString();
+    const QString format = written ? QStringLiteral("epub") : found.value("format").toString();
+    QString name = fileNameFrom(title);
+    if (name.isEmpty())
+        name = "book";
+    const QString folder = m_shareFolder;
+
+    // An added book can be large, so sharing runs on a worker like adding.
+    auto alive = std::make_shared<QEventLoopLocker>();
+    QPointer<Backend> self(this);
+    QThreadPool::globalInstance()->start([self, alive, id, written, source, title, author, format, name, folder] {
+        QString path;
+        bool done = false;
+        if (QDir().mkpath(folder)) {
+            QByteArray content;
+            bool read = true;
+            if (written) {
+                QFile text(source);
+                read = text.open(QIODevice::ReadOnly);
+                if (read)
+                    content = Epub::write(id, title, author, QString::fromUtf8(text.readAll()));
+            }
+            // "Title.epub", then "Title 2.epub": a copy shared before is
+            // never written over. Each name is claimed by creating it.
+            for (int n = 1; read && n < 1000 && !done; ++n) {
+                path = folder + "/" + name + (n == 1 ? QString() : " " + QString::number(n)) + "." + format;
+                if (QFile::exists(path))
+                    continue;
+                if (written) {
+                    QFile file(path);
+                    if (!file.open(QIODevice::WriteOnly | QIODevice::NewOnly))
+                        continue;
+                    done = file.write(content) == content.size() && file.flush();
+                    file.close();
+                    if (!done) {
+                        file.remove();
+                        break;
+                    }
+                } else {
+                    done = QFile::copy(source, path);
+                    if (!done && !QFile::exists(path))
+                        break;
+                }
+            }
+        }
+        QMetaObject::invokeMethod(qApp, [self, alive, done, path] {
+            if (!self)
+                return;
+            if (!done) {
+                self->setError(tr("The book could not be shared."));
+                return;
+            }
+            QString shown = path;
+            const QString home = QDir::homePath();
+            if (shown.startsWith(home + "/"))
+                shown = "~" + shown.mid(home.size());
+            emit self->shared(path, shown);
+        }, Qt::QueuedConnection);
+    });
 }
 
 void Backend::chooseFiles() {
